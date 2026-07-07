@@ -67,15 +67,28 @@ cp .env.example .env
 
 **Goal:** `POST /analyze` with a ticker returns a full `OnePager` JSON.
 
+**Important:** Run from the `Thesis` project root, not from inside `backend/`.
+
+**Note:** Port 8000 may already be used by another project (e.g. WorkoutLogger). Thesis runs on **8001**.
+
 ```bash
+cd ~/Documents/Personal\ Github\ Projects/Thesis
 source .venv/bin/activate
-uvicorn backend.main:app --reload
+./run.sh
+```
+
+Or without the script:
+
+```bash
+cd ~/Documents/Personal\ Github\ Projects/Thesis
+source .venv/bin/activate
+uvicorn backend.main:app --reload --port 8001
 ```
 
 In another terminal:
 
 ```bash
-curl -s -X POST http://localhost:8000/analyze \
+curl -s -X POST http://localhost:8001/analyze \
   -H "Content-Type: application/json" \
   -d '{"ticker":"AAPL"}' | python -m json.tool
 ```
@@ -83,10 +96,10 @@ curl -s -X POST http://localhost:8000/analyze \
 Health check:
 
 ```bash
-curl http://localhost:8000/health
+curl http://localhost:8001/health
 ```
 
-API docs: [http://localhost:8000/docs](http://localhost:8000/docs)
+API docs: [http://localhost:8001/docs](http://localhost:8001/docs)
 
 ### Phase 1 pipeline
 
