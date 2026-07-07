@@ -15,6 +15,7 @@ from backend.models import (
     IndustryCompetitors,
     OnePager,
     RiskItem,
+    SourceBackedPoint,
 )
 
 def _get_client() -> Anthropic:
@@ -61,9 +62,13 @@ Return ONLY a JSON object with this exact structure. No markdown, no code fences
   ],
   "external_signals": {{
     "sentiment": "bullish|bearish|neutral|mixed",
-    "summary": "sentiment summary",
-    "recent_news": ["news item 1"],
-    "notable_endorsements_or_criticism": ["endorsement or criticism"]
+    "summary": "break this into short point-form statements separated by periods; include analyst buy/hold/sell numbers when available",
+    "recent_news": [
+      {{"text": "news item 1", "source_url": "https://..."}}
+    ],
+    "notable_endorsements_or_criticism": [
+      {{"text": "endorsement or criticism", "source_url": "https://..."}}
+    ]
   }}
 }}
 
@@ -71,7 +76,11 @@ Bull/bear selection rules:
 - Exactly 3 bull and 3 bear arguments each
 - Each must be material, distinct, and evidence-based
 - Ground in financials, competitive dynamics, or recent events
-- Avoid generic statements"""
+- Avoid generic statements
+
+External signal sourcing rules:
+- Every item in recent_news and notable_endorsements_or_criticism must include a source_url when available
+- Use reputable and specific URLs (newsrooms, filings, mainstream financial press)"""
 
 
 def _strip_fences(text: str) -> str:
@@ -87,6 +96,21 @@ def _extract_text(message: anthropic.types.Message) -> str:
     if not parts:
         raise ValueError("Claude returned no text content")
     return parts[-1]
+
+
+def _normalize_signal_items(items: list[object]) -> list[SourceBackedPoint]:
+    normalized: list[SourceBackedPoint] = []
+    for item in items:
+        if isinstance(item, dict):
+            normalized.append(
+                SourceBackedPoint(
+                    text=str(item.get("text", "")).strip(),
+                    source_url=item.get("source_url"),
+                )
+            )
+        else:
+            normalized.append(SourceBackedPoint(text=str(item)))
+    return [entry for entry in normalized if entry.text]
 
 
 def generate_one_pager(
@@ -121,5 +145,16 @@ def generate_one_pager(
         ),
         bull_bear=BullBearCase(**payload["bull_bear"]),
         risks=[RiskItem(**risk) for risk in payload["risks"]],
-        external_signals=ExternalSignals(**payload["external_signals"]),
+        external_signals=ExternalSignals(
+            sentiment=payload["external_signals"]["sentiment"],
+            summary=payload["external_signals"]["summary"],
+            recent_news=_normalize_signal_items(
+                payload["external_signals"].get("recent_news", [])
+            ),
+            notable_endorsements_or_criticism=_normalize_signal_items(
+                payload["external_signals"].get(
+                    "notable_endorsements_or_criticism", []
+                )
+            ),
+        ),
     )
