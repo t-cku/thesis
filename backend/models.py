@@ -103,11 +103,16 @@ class RiskItem(BaseModel):
     description: str
 
 
+class SourceBackedPoint(BaseModel):
+    text: str
+    source_url: Optional[str] = None
+
+
 class ExternalSignals(BaseModel):
     sentiment: Literal["bullish", "bearish", "neutral", "mixed"]
     summary: str
-    recent_news: list[str] = Field(..., min_length=1)
-    notable_endorsements_or_criticism: list[str] = Field(default_factory=list)
+    recent_news: list[SourceBackedPoint] = Field(..., min_length=1)
+    notable_endorsements_or_criticism: list[SourceBackedPoint] = Field(default_factory=list)
 
 
 class OnePager(BaseModel):
@@ -186,10 +191,16 @@ class OnePager(BaseModel):
                         "sentiment": "neutral",
                         "summary": "Mixed sentiment around AI roadmap and China demand.",
                         "recent_news": [
-                            "Apple announces new AI features for upcoming iOS release."
+                            {
+                                "text": "Apple announces new AI features for upcoming iOS release.",
+                                "source_url": "https://example.com/apple-ai-release",
+                            }
                         ],
                         "notable_endorsements_or_criticism": [
-                            "Analysts debate pace of AI feature rollout vs. peers."
+                            {
+                                "text": "Analysts debate pace of AI feature rollout vs. peers.",
+                                "source_url": "https://example.com/apple-analyst-debate",
+                            }
                         ],
                     },
                 }
