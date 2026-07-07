@@ -112,3 +112,17 @@ API docs: [http://localhost:8001/docs](http://localhost:8001/docs)
 ```bash
 python -c "from backend.models import OnePager; print(OnePager.model_json_schema()['title'])"
 ```
+
+## Phase 2: Frontend
+
+Run the React app in a new terminal:
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+Open [http://localhost:5173](http://localhost:5173).
+
+By default the app calls `http://localhost:8001/analyze`. Override with `VITE_API_BASE_URL` if needed.
