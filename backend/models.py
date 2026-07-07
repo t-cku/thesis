@@ -1,0 +1,198 @@
+from datetime import datetime
+from typing import Literal, Optional
+
+from pydantic import BaseModel, Field, field_validator
+
+
+class AnalyzeRequest(BaseModel):
+    ticker: str = Field(..., min_length=1, max_length=10, examples=["AAPL"])
+
+    @field_validator("ticker")
+    @classmethod
+    def normalize_ticker(cls, value: str) -> str:
+        normalized = value.strip().upper()
+        if not normalized.isalnum():
+            raise ValueError("Ticker must contain only letters and numbers")
+        return normalized
+
+
+class CompanyOverview(BaseModel):
+    description: str = Field(..., description="What the company does")
+    differentiation: str = Field(..., description="How the company stands out")
+    products_services: list[str] = Field(..., min_length=1)
+    leadership: str = Field(..., description="CEO and relevant leadership context")
+
+
+class IndustryCompetitors(BaseModel):
+    industry: str
+    market_landscape: str
+    key_competitors: list[str] = Field(..., min_length=1)
+    competitive_position: str = Field(
+        ..., description="Where this company sits relative to competitors"
+    )
+
+
+# Metric tiers for the financial data layer (Phase 1 must attempt all required fields).
+REQUIRED_FINANCIAL_METRIC_FIELDS: frozenset[str] = frozenset(
+    {
+        "market_cap",
+        "revenue",
+        "revenue_growth_yoy",
+        "gross_margin",
+        "operating_margin",
+        "net_margin",
+        "total_debt",
+        "cash_and_equivalents",
+        "free_cash_flow",
+        "pe_ratio",
+    }
+)
+OPTIONAL_FINANCIAL_METRIC_FIELDS: frozenset[str] = frozenset(
+    {
+        "forward_pe",
+        "price_to_sales",
+        "ev_to_ebitda",
+    }
+)
+FINANCIAL_METADATA_FIELDS: frozenset[str] = frozenset({"currency", "fiscal_period"})
+
+
+class FinancialMetrics(BaseModel):
+    """Raw numbers fetched from the financial data layer (e.g. yfinance).
+
+    Required fields: must be attempted on every fetch; null if unavailable.
+    Optional fields: include when the data source provides them; omit otherwise.
+    """
+
+    currency: str = Field(default="USD", description="[Metadata] Reporting currency.")
+    fiscal_period: Optional[str] = Field(
+        None, description="[Metadata] Period label, e.g. FY2025 or TTM."
+    )
+    market_cap: Optional[float] = Field(None, description="[Required]")
+    revenue: Optional[float] = Field(None, description="[Required]")
+    revenue_growth_yoy: Optional[float] = Field(
+        None,
+        description="[Required] Year-over-year revenue growth as a decimal (e.g. 0.12 = 12%).",
+    )
+    gross_margin: Optional[float] = Field(None, description="[Required]")
+    operating_margin: Optional[float] = Field(None, description="[Required]")
+    net_margin: Optional[float] = Field(None, description="[Required]")
+    total_debt: Optional[float] = Field(None, description="[Required]")
+    cash_and_equivalents: Optional[float] = Field(None, description="[Required]")
+    free_cash_flow: Optional[float] = Field(None, description="[Required]")
+    pe_ratio: Optional[float] = Field(None, description="[Required] Trailing P/E.")
+    forward_pe: Optional[float] = Field(None, description="[Optional]")
+    price_to_sales: Optional[float] = Field(None, description="[Optional]")
+    ev_to_ebitda: Optional[float] = Field(None, description="[Optional]")
+
+
+class FinancialHealth(BaseModel):
+    metrics: FinancialMetrics
+    analysis: str = Field(
+        ..., description="Narrative assessment of financial soundness and valuation"
+    )
+
+
+class BullBearCase(BaseModel):
+    bull: list[str] = Field(..., min_length=3, max_length=3)
+    bear: list[str] = Field(..., min_length=3, max_length=3)
+
+
+class RiskItem(BaseModel):
+    category: Literal["regulatory", "competitive", "macro", "execution", "other"]
+    description: str
+
+
+class ExternalSignals(BaseModel):
+    sentiment: Literal["bullish", "bearish", "neutral", "mixed"]
+    summary: str
+    recent_news: list[str] = Field(..., min_length=1)
+    notable_endorsements_or_criticism: list[str] = Field(default_factory=list)
+
+
+class OnePager(BaseModel):
+    """Structured stock research one-pager returned by POST /analyze."""
+
+    ticker: str
+    company_name: str
+    generated_at: datetime
+    company_overview: CompanyOverview
+    industry_competitors: IndustryCompetitors
+    financial_health: FinancialHealth
+    bull_bear: BullBearCase
+    risks: list[RiskItem] = Field(..., min_length=1)
+    external_signals: ExternalSignals
+
+    model_config = {
+        "json_schema_extra": {
+            "examples": [
+                {
+                    "ticker": "AAPL",
+                    "company_name": "Apple Inc.",
+                    "generated_at": "2026-07-07T12:00:00Z",
+                    "company_overview": {
+                        "description": "Designs and sells consumer electronics, software, and services.",
+                        "differentiation": "Integrated hardware-software ecosystem with strong brand loyalty.",
+                        "products_services": ["iPhone", "Mac", "Services", "Wearables"],
+                        "leadership": "Tim Cook, CEO since 2011.",
+                    },
+                    "industry_competitors": {
+                        "industry": "Consumer Electronics & Technology",
+                        "market_landscape": "Mature, highly competitive market with platform ecosystems.",
+                        "key_competitors": ["Samsung", "Microsoft", "Google"],
+                        "competitive_position": "Premium market leader with recurring services revenue.",
+                    },
+                    "financial_health": {
+                        "metrics": {
+                            "currency": "USD",
+                            "fiscal_period": "FY2025",
+                            "market_cap": 3000000000000,
+                            "revenue": 400000000000,
+                            "revenue_growth_yoy": 0.05,
+                            "gross_margin": 0.46,
+                            "operating_margin": 0.30,
+                            "net_margin": 0.25,
+                            "total_debt": 95000000000,
+                            "cash_and_equivalents": 65000000000,
+                            "free_cash_flow": 110000000000,
+                            "pe_ratio": 28.5,
+                            "forward_pe": 26.0,
+                        },
+                        "analysis": "Strong balance sheet, high margins, and robust cash generation.",
+                    },
+                    "bull_bear": {
+                        "bull": [
+                            "Services revenue provides high-margin recurring income.",
+                            "Ecosystem lock-in drives customer retention and upsell.",
+                            "Massive cash reserves enable buybacks and strategic investment.",
+                        ],
+                        "bear": [
+                            "iPhone revenue concentration creates cyclical risk.",
+                            "Regulatory pressure on App Store fees may compress margins.",
+                            "China exposure adds geopolitical and demand uncertainty.",
+                        ],
+                    },
+                    "risks": [
+                        {
+                            "category": "regulatory",
+                            "description": "Antitrust scrutiny of App Store policies.",
+                        },
+                        {
+                            "category": "competitive",
+                            "description": "AI features from rivals could erode differentiation.",
+                        },
+                    ],
+                    "external_signals": {
+                        "sentiment": "neutral",
+                        "summary": "Mixed sentiment around AI roadmap and China demand.",
+                        "recent_news": [
+                            "Apple announces new AI features for upcoming iOS release."
+                        ],
+                        "notable_endorsements_or_criticism": [
+                            "Analysts debate pace of AI feature rollout vs. peers."
+                        ],
+                    },
+                }
+            ]
+        }
+    }
