@@ -1,6 +1,7 @@
 import json
 import os
 import re
+from datetime import datetime, timezone
 
 import anthropic
 from anthropic import Anthropic
@@ -16,7 +17,12 @@ from backend.models import (
     RiskItem,
 )
 
-client = Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
+def _get_client() -> Anthropic:
+    api_key = os.getenv("ANTHROPIC_API_KEY")
+    if not api_key:
+        raise ValueError("ANTHROPIC_API_KEY is not configured")
+    return Anthropic(api_key=api_key)
+
 
 ANALYSIS_PROMPT = """You are a concise equity research analyst writing a one-pager for a busy investor.
 
@@ -94,7 +100,7 @@ def generate_one_pager(
         financial_metrics_json=metrics.model_dump_json(indent=2),
     )
 
-    message = client.messages.create(
+    message = _get_client().messages.create(
         model="claude-sonnet-4-6",
         max_tokens=4096,
         tools=[{"type": "web_search_20250305", "name": "web_search", "max_uses": 5}],
@@ -106,7 +112,7 @@ def generate_one_pager(
     return OnePager(
         ticker=ticker,
         company_name=company_name,
-        generated_at=message.created_at,
+        generated_at=datetime.now(timezone.utc),
         company_overview=CompanyOverview(**payload["company_overview"]),
         industry_competitors=IndustryCompetitors(**payload["industry_competitors"]),
         financial_health=FinancialHealth(
