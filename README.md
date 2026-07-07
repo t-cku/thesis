@@ -60,7 +60,39 @@ python -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
 cp .env.example .env
+# Add your Anthropic API key to .env
 ```
+
+## Phase 1: Run the backend
+
+**Goal:** `POST /analyze` with a ticker returns a full `OnePager` JSON.
+
+```bash
+source .venv/bin/activate
+uvicorn backend.main:app --reload
+```
+
+In another terminal:
+
+```bash
+curl -s -X POST http://localhost:8000/analyze \
+  -H "Content-Type: application/json" \
+  -d '{"ticker":"AAPL"}' | python -m json.tool
+```
+
+Health check:
+
+```bash
+curl http://localhost:8000/health
+```
+
+API docs: [http://localhost:8000/docs](http://localhost:8000/docs)
+
+### Phase 1 pipeline
+
+1. `financial_client.py` — fetches company name + metrics from yfinance
+2. `claude_client.py` — web search + synthesis into the 6-section JSON
+3. `main.py` — wires `POST /analyze`; injects real metrics (Claude only writes the narrative)
 
 ## Validate the contract
 
