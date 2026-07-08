@@ -9,10 +9,15 @@ const KNOWN_TICKERS = {
   google: "GOOGL",
   alphabet: "GOOGL",
   amazon: "AMZN",
+  "amazon web services": "AMZN",
+  aws: "AMZN",
   nvidia: "NVDA",
   tesla: "TSLA",
+  "meta platforms": "META",
   meta: "META",
+  facebook: "META",
   netflix: "NFLX",
+  "advanced micro devices": "AMD",
   amd: "AMD",
   intel: "INTC",
   salesforce: "CRM",
@@ -21,6 +26,20 @@ const KNOWN_TICKERS = {
   qualcomm: "QCOM",
   broadcom: "AVGO",
   adobe: "ADBE",
+  spotify: "SPOT",
+  marvell: "MRVL",
+  samsung: "005930.KS",
+  huawei: null,
+  xiaomi: "XIACF",
+  palantir: "PLTR",
+  snowflake: "SNOW",
+  servicenow: "NOW",
+  uber: "UBER",
+  airbnb: "ABNB",
+  shopify: "SHOP",
+  paypal: "PYPL",
+  block: "SQ",
+  square: "SQ",
 };
 
 function formatCurrencyNumber(value) {
@@ -50,17 +69,162 @@ function splitToBullets(paragraph) {
     .filter(Boolean);
 }
 
-function extractTickerFromText(text) {
-  const str = String(text || "");
-  const bracket = str.match(/\(([A-Z]{1,5})\)/);
-  if (bracket) return bracket[1];
-  const bareTicker = str.match(/\b[A-Z]{1,5}\b/);
-  if (bareTicker) return bareTicker[0];
-  const lower = str.toLowerCase();
-  for (const [name, ticker] of Object.entries(KNOWN_TICKERS)) {
-    if (lower.includes(name)) return ticker;
+// Product/tech acronyms that are not stock tickers.
+const TICKER_BLOCKLIST = new Set([
+  "AI",
+  "AR",
+  "VR",
+  "MR",
+  "XR",
+  "IT",
+  "US",
+  "UK",
+  "EU",
+  "CEO",
+  "CFO",
+  "IPO",
+  "ETF",
+  "OS",
+  "PC",
+  "TV",
+  "EV",
+  "IOT",
+  "LLM",
+  "ML",
+  "TPU",
+  "AWS",
+  "ASIC",
+  "GPU",
+  "CPU",
+  "FPGA",
+  "SOC",
+  "HPC",
+  "CDN",
+  "SaaS",
+  "API",
+  "NPU",
+  "DPU",
+]);
+
+function lookupKnownTicker(text) {
+  const raw = String(text || "");
+  const lower = raw.toLowerCase();
+  const entries = Object.entries(KNOWN_TICKERS)
+    .filter(([, ticker]) => ticker)
+    .sort(([a], [b]) => b.length - a.length);
+
+  for (const [name, ticker] of entries) {
+    if (name.length <= 3) {
+      const re = new RegExp(`\\b${name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\b`, "i");
+      if (re.test(raw)) return ticker;
+    } else if (lower.includes(name)) {
+      return ticker;
+    }
   }
   return null;
+}
+
+function resolveTicker(name, apiTicker) {
+  const fromApi = String(apiTicker || "").trim().toUpperCase();
+  if (fromApi && !TICKER_BLOCKLIST.has(fromApi)) return fromApi;
+  return lookupKnownTicker(name);
+}
+
+function toDisplayString(value) {
+  if (value == null) return "";
+  if (typeof value === "string") return value.trim();
+  if (typeof value === "number" || typeof value === "boolean") return String(value);
+  if (Array.isArray(value)) {
+    return value.map(toDisplayString).filter(Boolean).join(" ");
+  }
+  if (typeof value === "object") {
+    for (const key of [
+      "text",
+      "title",
+      "headline",
+      "point",
+      "description",
+      "body",
+      "argument",
+      "name",
+      "company",
+      "label",
+    ]) {
+      const nested = value[key];
+      if (typeof nested === "string" && nested.trim()) return nested.trim();
+    }
+    return "";
+  }
+  const asString = String(value).trim();
+  return asString === "[object Object]" ? "" : asString;
+}
+
+function renderText(value, fallback = "") {
+  const text = toDisplayString(value);
+  return text || fallback;
+}
+
+function toStringList(value) {
+  if (value == null) return [];
+  if (typeof value === "string") return splitToBullets(value);
+  if (!Array.isArray(value)) return [renderText(value)].filter(Boolean);
+  return value.map((item) => renderText(item)).filter(Boolean);
+}
+
+function normalizeCompetitor(raw) {
+  if (typeof raw === "string") {
+    const str = raw.trim();
+    const name = str.replace(/\s*\(.*?\)\s*$/, "").trim();
+    return {
+      name,
+      ticker: resolveTicker(str, null),
+      description: str.replace(name, "").trim() || null,
+    };
+  }
+
+  if (typeof raw === "object" && raw !== null) {
+    const name = toDisplayString(raw.name ?? raw.company);
+    const description = toDisplayString(raw.description ?? raw.context) || null;
+    const ticker = resolveTicker(name, raw.ticker);
+    return { name, ticker, description };
+  }
+
+  return { name: toDisplayString(raw), ticker: null, description: null };
+}
+
+function sortEndorsements(items) {
+  return [...items].sort((a, b) => {
+    const da = a?.published_at ? new Date(a.published_at).getTime() : 0;
+    const db = b?.published_at ? new Date(b.published_at).getTime() : 0;
+    return da - db;
+  });
+}
+
+function pointRepeatsTitle(title, point) {
+  const titleLower = String(title || "").toLowerCase().trim();
+  const pointLower = String(point || "").toLowerCase().trim();
+  return pointLower === titleLower || pointLower.startsWith(titleLower);
+}
+
+function normalizeBullBearItem(raw, fallbackTitle) {
+  if (typeof raw === "string") {
+    return { title: fallbackTitle, points: splitToBullets(raw) };
+  }
+
+  if (!raw || typeof raw !== "object") {
+    return { title: fallbackTitle, points: [] };
+  }
+
+  const title = renderText(raw.title ?? raw.headline, fallbackTitle);
+  let points = toStringList(raw.points ?? raw.bullets ?? raw.body).filter(
+    (point) => !pointRepeatsTitle(title, point)
+  );
+  if (!points.length) {
+    const body = renderText(raw.body);
+    if (body && !pointRepeatsTitle(title, body)) points = splitToBullets(body);
+  }
+
+  return { title, points };
 }
 
 function oneLineMetricAnalysis(key, value) {
@@ -253,6 +417,11 @@ export default function App() {
   }
 
   const analystMix = analysis ? parseAnalystMix(analysis.external_signals?.summary) : null;
+  const analystSource =
+    analysis?.external_signals?.recent_news?.find((n) => n?.source_url)?.source_url ||
+    analysis?.external_signals?.notable_endorsements_or_criticism?.find((n) => n?.source_url)
+      ?.source_url ||
+    null;
 
   return (
     <main className="page">
@@ -317,7 +486,7 @@ export default function App() {
           </section>
 
           <section className="card">
-            <h3>2. Financials / valuation</h3>
+            <h3>2. Financials and Valuation</h3>
             <p className="hint">Click any number to toggle one-line analysis.</p>
             <table className="metricsTable">
               <thead>
@@ -359,20 +528,32 @@ export default function App() {
             </p>
             <p>{analysis.industry_competitors?.market_landscape}</p>
             <ul>
-              {(analysis.industry_competitors?.key_competitors || []).map((name) => {
-                const competitorTicker = extractTickerFromText(name);
-                if (!competitorTicker) return <li key={name}>{name}</li>;
+              {(analysis.industry_competitors?.key_competitors || []).map((raw, idx) => {
+                const competitor = normalizeCompetitor(raw);
+                const key = `${competitor.name || "competitor"}-${idx}`;
+                if (!competitor.name) return null;
+                if (!competitor.ticker) {
+                  return (
+                    <li key={key}>
+                      {competitor.name}
+                      {competitor.description ? ` — ${competitor.description}` : ""}
+                    </li>
+                  );
+                }
                 return (
-                  <li key={name}>
+                  <li key={key}>
                     <button
-                      className="linkButton"
+                      className="linkButton inlineCompany"
                       onClick={() => {
-                        setTicker(competitorTicker);
-                        analyzeTicker(competitorTicker);
+                        setTicker(competitor.ticker);
+                        analyzeTicker(competitor.ticker);
                       }}
                     >
-                      {name}
+                      {competitor.name} ({competitor.ticker})
                     </button>
+                    {competitor.description ? (
+                      <span>{` — ${competitor.description}`}</span>
+                    ) : null}
                   </li>
                 );
               })}
@@ -386,28 +567,34 @@ export default function App() {
             <h3>4. Bull / bear case</h3>
             <div className="split">
               <div>
-                {(analysis.bull_bear?.bull || []).map((text, idx) => (
+                {(analysis.bull_bear?.bull || []).map((raw, idx) => {
+                  const item = normalizeBullBearItem(raw, `Bull case ${idx + 1}`);
+                  return (
                   <div className="subCard positive" key={`bull-${idx}`}>
-                    <h4>Bull {idx + 1}</h4>
+                    <h4>{item.title}</h4>
                     <ul>
-                      {splitToBullets(text).map((bullet, i) => (
+                      {item.points.map((bullet, i) => (
                         <li key={`bull-${idx}-${i}`}>{bullet}</li>
                       ))}
                     </ul>
                   </div>
-                ))}
+                  );
+                })}
               </div>
               <div>
-                {(analysis.bull_bear?.bear || []).map((text, idx) => (
+                {(analysis.bull_bear?.bear || []).map((raw, idx) => {
+                  const item = normalizeBullBearItem(raw, `Bear case ${idx + 1}`);
+                  return (
                   <div className="subCard negative" key={`bear-${idx}`}>
-                    <h4>Bear {idx + 1}</h4>
+                    <h4>{item.title}</h4>
                     <ul>
-                      {splitToBullets(text).map((bullet, i) => (
+                      {item.points.map((bullet, i) => (
                         <li key={`bear-${idx}-${i}`}>{bullet}</li>
                       ))}
                     </ul>
                   </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           </section>
@@ -434,13 +621,18 @@ export default function App() {
               ))}
             </ul>
             {!analystMix ? null : (
-              <div className="analystMix">
+              <div className="analystMix centered">
                 <div className="pie" style={{ background: analystMix.pie }} />
                 <ul>
                   <li>Buy: {analystMix.buy}</li>
                   <li>Hold: {analystMix.hold}</li>
                   <li>Sell: {analystMix.sell}</li>
                 </ul>
+                {analystSource ? (
+                  <a className="sourceLinkSmall" href={analystSource} target="_blank" rel="noreferrer noopener">
+                    source
+                  </a>
+                ) : null}
               </div>
             )}
             <h4>Recent news</h4>
@@ -453,7 +645,7 @@ export default function App() {
                   <li key={`news-${idx}`}>
                     {text}{" "}
                     {source ? (
-                      <a href={source} target="_blank" rel="noreferrer noopener">
+                      <a className="sourceLinkSmall" href={source} target="_blank" rel="noreferrer noopener">
                         source
                       </a>
                     ) : null}
@@ -463,16 +655,21 @@ export default function App() {
             </ul>
             <h4>Endorsements / criticism</h4>
             <ul>
-              {(analysis.external_signals?.notable_endorsements_or_criticism || []).map(
-                (item, idx) => {
+              {sortEndorsements(
+                analysis.external_signals?.notable_endorsements_or_criticism || []
+              ).map((item, idx) => {
                   const isObj = typeof item === "object" && item !== null;
                   const text = isObj ? item.text : item;
                   const source = isObj ? item.source_url : null;
+                  const publishedAt = isObj ? item.published_at : null;
                   return (
                     <li key={`end-${idx}`}>
+                      {publishedAt ? (
+                        <span className="itemDate">{publishedAt}: </span>
+                      ) : null}
                       {text}{" "}
                       {source ? (
-                        <a href={source} target="_blank" rel="noreferrer noopener">
+                        <a className="sourceLinkSmall" href={source} target="_blank" rel="noreferrer noopener">
                           source
                         </a>
                       ) : null}

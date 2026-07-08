@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import date, datetime
 from typing import Literal, Optional
 
 from pydantic import BaseModel, Field, field_validator
@@ -23,10 +23,20 @@ class CompanyOverview(BaseModel):
     leadership: str = Field(..., description="CEO and relevant leadership context")
 
 
+class CompetitorItem(BaseModel):
+    name: str
+    ticker: Optional[str] = Field(
+        None, description="US-listed ticker symbol when available"
+    )
+    description: Optional[str] = Field(
+        None, description="Brief context, e.g. product focus or market segment"
+    )
+
+
 class IndustryCompetitors(BaseModel):
     industry: str
     market_landscape: str
-    key_competitors: list[str] = Field(..., min_length=1)
+    key_competitors: list[CompetitorItem] = Field(..., min_length=1)
     competitive_position: str = Field(
         ..., description="Where this company sits relative to competitors"
     )
@@ -93,9 +103,18 @@ class FinancialHealth(BaseModel):
     )
 
 
+class BullBearArgument(BaseModel):
+    title: str = Field(
+        ..., description="Standalone headline, 3-6 words, not a truncated sentence"
+    )
+    points: list[str] = Field(
+        ..., min_length=1, max_length=3, description="Supporting bullets; must not repeat the title"
+    )
+
+
 class BullBearCase(BaseModel):
-    bull: list[str] = Field(..., min_length=3, max_length=3)
-    bear: list[str] = Field(..., min_length=3, max_length=3)
+    bull: list[BullBearArgument] = Field(..., min_length=3, max_length=3)
+    bear: list[BullBearArgument] = Field(..., min_length=3, max_length=3)
 
 
 class RiskItem(BaseModel):
@@ -106,6 +125,9 @@ class RiskItem(BaseModel):
 class SourceBackedPoint(BaseModel):
     text: str
     source_url: Optional[str] = None
+    published_at: Optional[date] = Field(
+        None, description="Publication date (ISO YYYY-MM-DD)"
+    )
 
 
 class ExternalSignals(BaseModel):
@@ -144,7 +166,11 @@ class OnePager(BaseModel):
                     "industry_competitors": {
                         "industry": "Consumer Electronics & Technology",
                         "market_landscape": "Mature, highly competitive market with platform ecosystems.",
-                        "key_competitors": ["Samsung", "Microsoft", "Google"],
+                        "key_competitors": [
+                            {"name": "Samsung", "ticker": "005930.KS", "description": "Smartphones and displays"},
+                            {"name": "Microsoft", "ticker": "MSFT", "description": "Cloud and productivity software"},
+                            {"name": "Google", "ticker": "GOOGL", "description": "Android ecosystem and cloud AI"},
+                        ],
                         "competitive_position": "Premium market leader with recurring services revenue.",
                     },
                     "financial_health": {
@@ -167,14 +193,45 @@ class OnePager(BaseModel):
                     },
                     "bull_bear": {
                         "bull": [
-                            "Services revenue provides high-margin recurring income.",
-                            "Ecosystem lock-in drives customer retention and upsell.",
-                            "Massive cash reserves enable buybacks and strategic investment.",
+                            {
+                                "title": "High-margin Services growth",
+                                "points": [
+                                    "Services revenue provides recurring, high-margin income.",
+                                    "Subscription base reduces hardware cyclicality.",
+                                ],
+                            },
+                            {
+                                "title": "Ecosystem lock-in strength",
+                                "points": [
+                                    "Integrated hardware-software drives retention and upsell.",
+                                ],
+                            },
+                            {
+                                "title": "Massive capital flexibility",
+                                "points": [
+                                    "Cash reserves support buybacks and strategic investment.",
+                                ],
+                            },
                         ],
                         "bear": [
-                            "iPhone revenue concentration creates cyclical risk.",
-                            "Regulatory pressure on App Store fees may compress margins.",
-                            "China exposure adds geopolitical and demand uncertainty.",
+                            {
+                                "title": "iPhone concentration risk",
+                                "points": [
+                                    "Revenue still heavily tied to iPhone upgrade cycles.",
+                                ],
+                            },
+                            {
+                                "title": "App Store regulatory pressure",
+                                "points": [
+                                    "Antitrust action could compress Services take rates.",
+                                ],
+                            },
+                            {
+                                "title": "China demand uncertainty",
+                                "points": [
+                                    "Geopolitical tension adds demand and supply risk.",
+                                ],
+                            },
                         ],
                     },
                     "risks": [
@@ -194,12 +251,14 @@ class OnePager(BaseModel):
                             {
                                 "text": "Apple announces new AI features for upcoming iOS release.",
                                 "source_url": "https://example.com/apple-ai-release",
+                                "published_at": "2026-07-01",
                             }
                         ],
                         "notable_endorsements_or_criticism": [
                             {
                                 "text": "Analysts debate pace of AI feature rollout vs. peers.",
                                 "source_url": "https://example.com/apple-analyst-debate",
+                                "published_at": "2026-03-15",
                             }
                         ],
                     },
