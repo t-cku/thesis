@@ -1,7 +1,20 @@
 :root {
   font-family: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   color: #0f172a;
-  background: #f8fafc;
+  background: #f3f7ff;
+  --bg: #f3f7ff;
+  --surface: #ffffff;
+  --surface-soft: #f8fbff;
+  --surface-strong: #eff4ff;
+  --text-main: #0f172a;
+  --text-muted: #475569;
+  --border: #dbe4f0;
+  --primary: #4f46e5;
+  --primary-strong: #3730a3;
+  --positive: #16a34a;
+  --warning: #d97706;
+  --negative: #dc2626;
+  --neutral: #64748b;
 }
 
 * {
@@ -10,29 +23,35 @@
 
 body {
   margin: 0;
+  background: radial-gradient(circle at 12% 0%, #e9efff 0%, #f4f7ff 40%, #f8fafc 100%);
+  color: var(--text-main);
 }
 
 .page {
-  max-width: 920px;
+  max-width: 980px;
   margin: 0 auto;
   padding: 2rem 1rem 4rem;
 }
 
 .header h1 {
   margin: 0;
-  font-size: 2rem;
+  font-size: 2.15rem;
+  letter-spacing: -0.02em;
+  color: #1f2a75;
 }
 
 .header p {
   margin: 0.5rem 0 1.5rem;
-  color: #334155;
+  color: var(--text-muted);
+  max-width: 42rem;
 }
 
 .search {
-  background: white;
-  border: 1px solid #e2e8f0;
-  border-radius: 12px;
-  padding: 1rem;
+  background: linear-gradient(180deg, #fdfdff 0%, #f6f9ff 100%);
+  border: 1px solid #d9e2f2;
+  border-radius: 14px;
+  padding: 1.1rem;
+  box-shadow: 0 8px 20px rgba(79, 70, 229, 0.08);
 }
 
 .searchRow {
@@ -47,16 +66,23 @@ input {
   border-radius: 8px;
   border: 1px solid #cbd5e1;
   font-size: 1rem;
+  background: #fff;
+}
+
+input:focus-visible {
+  outline: 2px solid #c7d2fe;
+  border-color: #818cf8;
 }
 
 button {
   border: 0;
-  background: #0f172a;
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-strong) 100%);
   color: white;
   border-radius: 8px;
   padding: 0.65rem 1rem;
   cursor: pointer;
   font-weight: 600;
+  box-shadow: 0 6px 14px rgba(79, 70, 229, 0.35);
 }
 
 button:disabled {
@@ -67,6 +93,10 @@ button:disabled {
 .error {
   color: #b91c1c;
   margin-top: 1rem;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 10px;
+  padding: 0.6rem 0.75rem;
 }
 
 .content {
@@ -79,20 +109,64 @@ button:disabled {
   margin: 0;
 }
 
+.titleLine {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  flex-wrap: wrap;
+}
+
 .titleBlock p {
   margin: 0.35rem 0 0;
-  color: #475569;
+  color: var(--text-muted);
+}
+
+.sentimentChip {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-weight: 700;
+  border-radius: 999px;
+  padding: 0.22rem 0.58rem;
+  border: 1px solid transparent;
+}
+
+.sentimentChip--bullish {
+  color: #166534;
+  background: #dcfce7;
+  border-color: #86efac;
+}
+
+.sentimentChip--bearish {
+  color: #991b1b;
+  background: #fee2e2;
+  border-color: #fca5a5;
+}
+
+.sentimentChip--mixed {
+  color: #92400e;
+  background: #fef3c7;
+  border-color: #fcd34d;
+}
+
+.sentimentChip--neutral {
+  color: #334155;
+  background: #e2e8f0;
+  border-color: #cbd5e1;
 }
 
 .card {
-  background: white;
-  border: 1px solid #e2e8f0;
-  border-radius: 12px;
-  padding: 1rem;
+  background: linear-gradient(180deg, #ffffff 0%, #fbfdff 100%);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 1.05rem;
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.04);
 }
 
 .card h3 {
   margin-top: 0;
+  color: #1f2a75;
+  letter-spacing: -0.01em;
 }
 
 .card p,
@@ -113,10 +187,60 @@ button:disabled {
   padding-left: 1.25rem;
 }
 
+.metricsGrid {
+  margin-bottom: 1rem;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 0.65rem;
+}
+
+.metricCard {
+  border: 1px solid #dbe4f0;
+  border-radius: 12px;
+  padding: 0.7rem 0.75rem;
+  background: var(--surface-soft);
+}
+
+.metricCard--positive {
+  border-color: #86efac;
+  background: #f0fdf4;
+}
+
+.metricCard--warning {
+  border-color: #fcd34d;
+  background: #fffbeb;
+}
+
+.metricCard--negative {
+  border-color: #fca5a5;
+  background: #fef2f2;
+}
+
+.metricCard--neutral {
+  border-color: #cbd5e1;
+  background: var(--surface-soft);
+}
+
+.metricLabel {
+  margin: 0;
+  font-size: 0.78rem;
+  color: var(--neutral);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  font-weight: 600;
+}
+
+.metricValue {
+  margin: 0.22rem 0 0;
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
 .subsectionLabel {
   margin: 1rem 0 0.5rem;
   font-weight: 600;
-  color: #0f172a;
+  color: var(--text-main);
 }
 
 .riskList {
@@ -252,6 +376,10 @@ button:disabled {
 }
 
 @media (max-width: 640px) {
+  .page {
+    padding-top: 1.25rem;
+  }
+
   .ratingsTable thead {
     display: none;
   }
@@ -286,6 +414,10 @@ button:disabled {
     font-weight: 600;
     color: #64748b;
     flex-shrink: 0;
+  }
+
+  .metricsGrid {
+    grid-template-columns: 1fr 1fr;
   }
 }
 
