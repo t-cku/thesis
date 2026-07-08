@@ -1,9 +1,12 @@
 import { useMemo, useState } from 'react'
 import type { FormEvent } from 'react'
+import { AnalystRatingsTable } from './components/AnalystRatingsTable'
+import { NewsList } from './components/NewsList'
+import { RiskBadge } from './components/RiskBadge'
+import { ScannableProse } from './components/ScannableProse'
+import type { RiskCategory } from './formatting'
 
 type Sentiment = 'bullish' | 'bearish' | 'neutral' | 'mixed'
-
-type RiskCategory = 'regulatory' | 'competitive' | 'macro' | 'execution' | 'other'
 
 interface OnePager {
   ticker: string
@@ -131,16 +134,16 @@ function App() {
             <p>
               <strong>Industry:</strong> {result.industry_competitors.industry}
             </p>
-            <p>{result.industry_competitors.market_landscape}</p>
+            <ScannableProse text={result.industry_competitors.market_landscape} />
             <p>
               <strong>Key competitors:</strong> {result.industry_competitors.key_competitors.join(', ')}
             </p>
-            <p>{result.industry_competitors.competitive_position}</p>
+            <ScannableProse text={result.industry_competitors.competitive_position} />
           </article>
 
           <article className="card">
             <h3>3. Financial health</h3>
-            <p>{result.financial_health.analysis}</p>
+            <ScannableProse text={result.financial_health.analysis} />
           </article>
 
           <article className="card split">
@@ -164,10 +167,11 @@ function App() {
 
           <article className="card">
             <h3>5. Risks</h3>
-            <ul>
+            <ul className="riskList">
               {result.risks.map((risk, index) => (
-                <li key={`${risk.category}-${index}`}>
-                  <strong>{risk.category}:</strong> {risk.description}
+                <li key={`${risk.category}-${index}`} className="riskItem">
+                  <RiskBadge category={risk.category} />
+                  <span>{risk.description}</span>
                 </li>
               ))}
             </ul>
@@ -178,15 +182,10 @@ function App() {
             <p>
               <strong>Sentiment:</strong> {result.external_signals.sentiment}
             </p>
-            <p>{result.external_signals.summary}</p>
-            <p>
-              <strong>Recent news:</strong>
-            </p>
-            <ul>
-              {result.external_signals.recent_news.map((news) => (
-                <li key={news}>{news}</li>
-              ))}
-            </ul>
+            <ScannableProse text={result.external_signals.summary} />
+            <AnalystRatingsTable items={result.external_signals.notable_endorsements_or_criticism} />
+            <p className="subsectionLabel">Recent news</p>
+            <NewsList items={result.external_signals.recent_news} />
           </article>
         </section>
       )}
