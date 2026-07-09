@@ -126,3 +126,30 @@ npm run dev
 Open [http://localhost:5173](http://localhost:5173).
 
 By default the app calls `http://localhost:8001/analyze`. Override with `VITE_API_BASE_URL` if needed.
+
+## User accounts and saved theses
+
+Users can create an account, log in, and save generated one-pagers to their personal library.
+
+### Auth endpoints
+
+| Endpoint | Method | Auth | Description |
+|----------|--------|------|-------------|
+| `/auth/register` | POST | No | Create account (`email`, `password`, optional `name`) |
+| `/auth/login` | POST | No | Log in and receive a JWT |
+| `/auth/me` | GET | Bearer token | Return the current user |
+
+### Saved thesis endpoints
+
+| Endpoint | Method | Auth | Description |
+|----------|--------|------|-------------|
+| `/theses` | POST | Bearer token | Save a `OnePager` to the user's account |
+| `/theses` | GET | Bearer token | List saved theses (summary) |
+| `/theses/{id}` | GET | Bearer token | Fetch a full saved thesis |
+| `/theses/{id}` | DELETE | Bearer token | Delete a saved thesis |
+
+The frontend stores the JWT in `localStorage` and sends it as `Authorization: Bearer <token>`.
+
+### Database
+
+SQLite is used by default (`thesis.db` in the project root). Configure with `DATABASE_URL` in `.env`. Set a strong `SECRET_KEY` in production.
