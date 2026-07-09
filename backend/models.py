@@ -1,7 +1,55 @@
 from datetime import datetime
 from typing import Literal, Optional
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, EmailStr, Field, field_validator
+
+
+class RegisterRequest(BaseModel):
+    email: EmailStr
+    password: str = Field(..., min_length=8, max_length=128)
+    name: Optional[str] = Field(None, max_length=120)
+
+
+class LoginRequest(BaseModel):
+    email: EmailStr
+    password: str = Field(..., min_length=1, max_length=128)
+
+
+class UserPublic(BaseModel):
+    id: int
+    email: EmailStr
+    name: Optional[str] = None
+    created_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+class AuthResponse(BaseModel):
+    access_token: str
+    token_type: str = "bearer"
+    user: UserPublic
+
+
+class SaveThesisRequest(BaseModel):
+    one_pager: "OnePager"
+
+
+class SavedThesisSummary(BaseModel):
+    id: int
+    ticker: str
+    company_name: str
+    generated_at: datetime
+    saved_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+class SavedThesisDetail(BaseModel):
+    id: int
+    ticker: str
+    company_name: str
+    saved_at: datetime
+    one_pager: "OnePager"
 
 
 class AnalyzeRequest(BaseModel):
@@ -196,3 +244,7 @@ class OnePager(BaseModel):
             ]
         }
     }
+
+
+SaveThesisRequest.model_rebuild()
+SavedThesisDetail.model_rebuild()

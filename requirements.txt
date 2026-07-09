@@ -1,6 +1,10 @@
 fastapi
 uvicorn
-pydantic
+pydantic[email]
 python-dotenv
 anthropic
 yfinance
+sqlalchemy
+python-jose[cryptography]
+passlib[bcrypt]
+bcrypt<4.1
