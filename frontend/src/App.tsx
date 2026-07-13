@@ -45,7 +45,23 @@ interface OnePager {
   }
 }
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8001'
+const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL ?? '').replace(/\/$/, '')
+
+function analyzeEndpoint(): string {
+  return API_BASE_URL ? `${API_BASE_URL}/analyze` : '/analyze'
+}
+
+function formatRequestError(error: unknown): string {
+  if (error instanceof TypeError) {
+    return 'Cannot reach the backend. From the project root, run ./run.sh (port 8001), keep that terminal open, then try again.'
+  }
+
+  if (error instanceof Error) {
+    return error.message
+  }
+
+  return 'Unexpected error'
+}
 
 const METRIC_CONFIG: Array<{
   key: string
@@ -161,7 +177,7 @@ function App() {
     setError(null)
 
     try {
-      const response = await fetch(`${API_BASE_URL}/analyze`, {
+      const response = await fetch(analyzeEndpoint(), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ticker }),
@@ -175,7 +191,7 @@ function App() {
       const payload = (await response.json()) as OnePager
       setResult(payload)
     } catch (requestError) {
-      setError(requestError instanceof Error ? requestError.message : 'Unexpected error')
+      setError(formatRequestError(requestError))
       setResult(null)
     } finally {
       setLoading(false)
