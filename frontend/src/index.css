@@ -46,6 +46,13 @@ body {
   max-width: 42rem;
 }
 
+.buildLabel {
+  margin: -0.75rem 0 1rem;
+  font-size: 0.78rem;
+  color: #6366f1;
+  font-weight: 600;
+}
+
 .search {
   background: linear-gradient(180deg, #fdfdff 0%, #f6f9ff 100%);
   border: 1px solid #d9e2f2;

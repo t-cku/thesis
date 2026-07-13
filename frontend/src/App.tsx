@@ -79,6 +79,7 @@ function App() {
       <header className="header">
         <h1>Thesis</h1>
         <p>Structured stock research one-pager for busy investors.</p>
+        <p className="buildLabel">Build: saved-theses + ticker-links (Jul 2026)</p>
       </header>
 
       <AuthPanel />
