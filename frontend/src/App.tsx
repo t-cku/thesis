@@ -21,7 +21,7 @@ function formatRequestError(error: unknown): string {
 }
 
 function App() {
-  const { token } = useAuth()
+  const { token, user } = useAuth()
   const [view, setView] = useState<View>('analyze')
   const [ticker, setTicker] = useState('AAPL')
   const [loading, setLoading] = useState(false)
@@ -125,10 +125,12 @@ function App() {
           {result && (
             <>
               <div className="resultActions">
-                {token ? (
+                {token && user?.email_verified ? (
                   <button type="button" onClick={() => void handleSave()} disabled={saving}>
                     {saving ? 'Saving...' : 'Save to my account'}
                   </button>
+                ) : token ? (
+                  <p className="muted">Verify your email to save this analysis.</p>
                 ) : (
                   <p className="muted">Log in to save this analysis to your account.</p>
                 )}

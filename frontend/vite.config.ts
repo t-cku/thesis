@@ -7,6 +7,8 @@ export default defineConfig({
     proxy: {
       '/analyze': 'http://localhost:8001',
       '/health': 'http://localhost:8001',
+      '/auth': 'http://localhost:8001',
+      '/theses': 'http://localhost:8001',
     },
   },
 })

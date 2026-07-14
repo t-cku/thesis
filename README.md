@@ -129,27 +129,39 @@ By default the app calls `http://localhost:8001/analyze`. Override with `VITE_AP
 
 ## User accounts and saved theses
 
-Users can create an account, log in, and save generated one-pagers to their personal library.
+Users can create an account, verify email, log in, save generated one-pagers, and delete their account.
 
 ### Auth endpoints
 
 | Endpoint | Method | Auth | Description |
 |----------|--------|------|-------------|
-| `/auth/register` | POST | No | Create account (`email`, `password`, optional `name`) |
+| `/auth/register` | POST | No | Create account (`email`, `password`, optional `name`) and start email verification |
 | `/auth/login` | POST | No | Log in and receive a JWT |
 | `/auth/me` | GET | Bearer token | Return the current user |
+| `/auth/verify-email` | POST | No | Verify email with `{ "token": "..." }` |
+| `/auth/resend-verification` | POST | Bearer token | Resend verification email/link |
+| `/auth/me` | DELETE | Bearer token | Delete account (`{ "password": "..." }`) and cascade-delete saved theses |
+
+Saving theses requires a **verified** email.
+
+### Email verification
+
+- If `SMTP_HOST` + `SMTP_FROM` are set, Thesis emails a verification link.
+- If SMTP is not configured (local default), the API returns/logs a local verification URL you can open in the browser (`/?verify=...`).
 
 ### Saved thesis endpoints
 
 | Endpoint | Method | Auth | Description |
 |----------|--------|------|-------------|
-| `/theses` | POST | Bearer token | Save a `OnePager` to the user's account |
-| `/theses` | GET | Bearer token | List saved theses (summary) |
-| `/theses/{id}` | GET | Bearer token | Fetch a full saved thesis |
-| `/theses/{id}` | DELETE | Bearer token | Delete a saved thesis |
+| `/theses` | POST | Bearer + verified | Save a `OnePager` to the user's account |
+| `/theses` | GET | Bearer + verified | List saved theses (summary) |
+| `/theses/{id}` | GET | Bearer + verified | Fetch a full saved thesis |
+| `/theses/{id}` | DELETE | Bearer + verified | Delete a saved thesis |
 
 The frontend stores the JWT in `localStorage` and sends it as `Authorization: Bearer <token>`.
 
 ### Database
+
+Default: SQLite at `./thesis.db` (`DATABASE_URL`). Existing local DBs are auto-migrated with verification columns on startup.
 
 SQLite is used by default (`thesis.db` in the project root). Configure with `DATABASE_URL` in `.env`. Set a strong `SECRET_KEY` in production.

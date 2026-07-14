@@ -67,6 +67,28 @@ export function fetchCurrentUser(token: string): Promise<User> {
   return request<User>('/auth/me', { token })
 }
 
+export function verifyEmail(token: string): Promise<AuthResponse> {
+  return request<AuthResponse>('/auth/verify-email', {
+    method: 'POST',
+    body: { token },
+  })
+}
+
+export function resendVerification(token: string): Promise<{ message: string }> {
+  return request<{ message: string }>('/auth/resend-verification', {
+    method: 'POST',
+    token,
+  })
+}
+
+export function deleteAccount(token: string, password: string): Promise<{ message: string }> {
+  return request<{ message: string }>('/auth/me', {
+    method: 'DELETE',
+    token,
+    body: { password },
+  })
+}
+
 export function analyzeTicker(ticker: string): Promise<OnePager> {
   return request<OnePager>('/analyze', {
     method: 'POST',

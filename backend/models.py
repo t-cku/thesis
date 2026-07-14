@@ -19,6 +19,7 @@ class UserPublic(BaseModel):
     id: int
     email: EmailStr
     name: Optional[str] = None
+    email_verified: bool = False
     created_at: datetime
 
     model_config = {"from_attributes": True}
@@ -28,6 +29,21 @@ class AuthResponse(BaseModel):
     access_token: str
     token_type: str = "bearer"
     user: UserPublic
+    message: Optional[str] = None
+    # Only returned when SMTP is not configured (local/dev convenience).
+    verification_url: Optional[str] = None
+
+
+class VerifyEmailRequest(BaseModel):
+    token: str = Field(..., min_length=8, max_length=128)
+
+
+class DeleteAccountRequest(BaseModel):
+    password: str = Field(..., min_length=1, max_length=128)
+
+
+class MessageResponse(BaseModel):
+    message: str
 
 
 class SaveThesisRequest(BaseModel):
