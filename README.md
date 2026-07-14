@@ -1,6 +1,6 @@
 # Thesis
 
-Stock research one-pager: type a ticker, get a structured six-section brief.
+Stock research one-pager: type a ticker, get a structured six-section brief. Only available for stocks listed in the US market.
 
 **Stack:** React + Vite frontend, FastAPI backend, Claude (Anthropic) + yfinance.
 
