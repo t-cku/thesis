@@ -6,6 +6,7 @@ import { AnalystRatingsTable } from './AnalystRatingsTable'
 import { NewsList } from './NewsList'
 import { RiskBadge } from './RiskBadge'
 import { ScannableProse } from './ScannableProse'
+import { SectionNav } from './SectionNav'
 
 interface OnePagerViewProps {
   result: OnePager
@@ -70,6 +71,8 @@ export function OnePagerView({ result, onAnalyzeTicker }: OnePagerViewProps) {
         {generatedTime && <p>Generated: {generatedTime}</p>}
       </div>
 
+      <SectionNav />
+
       <article className="card">
         <h3>1. Company overview</h3>
         <p>{result.company_overview.description}</p>
@@ -114,7 +117,7 @@ export function OnePagerView({ result, onAnalyzeTicker }: OnePagerViewProps) {
         <ScannableProse text={result.industry_competitors.competitive_position} />
       </article>
 
-      <article className="card">
+      <article id="section-financial-health" className="card sectionAnchor">
         <h3>3. Financial health</h3>
         <div className="metricsGrid">
           {financialMetrics.map((metric) => (
@@ -130,7 +133,7 @@ export function OnePagerView({ result, onAnalyzeTicker }: OnePagerViewProps) {
         <ScannableProse text={result.financial_health.analysis} />
       </article>
 
-      <article className="card">
+      <article id="section-bull-bear" className="card sectionAnchor">
         <h3>4. Bull / bear case</h3>
         <div className="split bullBearSplit">
           <div className="caseColumn caseColumn--bull">
@@ -152,7 +155,7 @@ export function OnePagerView({ result, onAnalyzeTicker }: OnePagerViewProps) {
         </div>
       </article>
 
-      <article className="card">
+      <article id="section-risks" className="card sectionAnchor">
         <h3>5. Risks</h3>
         <ul className="riskList">
           {result.risks.map((risk, index) => (
@@ -164,15 +167,17 @@ export function OnePagerView({ result, onAnalyzeTicker }: OnePagerViewProps) {
         </ul>
       </article>
 
-      <article className="card">
+      <article id="section-external-signals" className="card sectionAnchor">
         <h3>6. External signals</h3>
         <p>
           <strong>Sentiment:</strong> {result.external_signals.sentiment}
         </p>
         <ScannableProse text={result.external_signals.summary} />
         <AnalystRatingsTable items={result.external_signals.notable_endorsements_or_criticism} />
-        <p className="subsectionLabel">Recent news</p>
-        <NewsList items={result.external_signals.recent_news} />
+        <div id="section-recent-news" className="sectionAnchor">
+          <p className="subsectionLabel">Recent news</p>
+          <NewsList items={result.external_signals.recent_news} />
+        </div>
       </article>
     </section>
   )
