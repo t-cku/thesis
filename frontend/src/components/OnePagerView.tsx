@@ -16,6 +16,28 @@ function sentimentClass(sentiment: OnePager['external_signals']['sentiment']): s
   return `sentimentChip sentimentChip--${sentiment}`
 }
 
+function splitLeadIn(text: string): { lead: string; rest: string } {
+  const trimmed = text.trim()
+  const match = trimmed.match(/^(.+?[.!?])(\s+[\s\S]*)?$/)
+  if (!match) {
+    return { lead: trimmed, rest: '' }
+  }
+  return {
+    lead: match[1].trim(),
+    rest: (match[2] ?? '').trim(),
+  }
+}
+
+function CaseBullet({ text }: { text: string }) {
+  const { lead, rest } = splitLeadIn(text)
+  return (
+    <li>
+      <strong>{lead}</strong>
+      {rest ? <> {rest}</> : null}
+    </li>
+  )
+}
+
 export function OnePagerView({ result, onAnalyzeTicker }: OnePagerViewProps) {
   const generatedTime = useMemo(() => {
     if (!result.generated_at) return null
@@ -108,26 +130,25 @@ export function OnePagerView({ result, onAnalyzeTicker }: OnePagerViewProps) {
         <ScannableProse text={result.financial_health.analysis} />
       </article>
 
-      <article className="card split bullBearSplit">
-        <div className="caseColumn caseColumn--bull">
-          <h3>4. Bull case</h3>
-          <ul className="caseList">
-            {result.bull_bear.bull.map((item) => (
-              <li key={`bull-${item}`} title={item}>
-                {item}
-              </li>
-            ))}
-          </ul>
-        </div>
-        <div className="caseColumn caseColumn--bear">
-          <h3>Bear case</h3>
-          <ul className="caseList">
-            {result.bull_bear.bear.map((item) => (
-              <li key={`bear-${item}`} title={item}>
-                {item}
-              </li>
-            ))}
-          </ul>
+      <article className="card">
+        <h3>4. Bull / bear case</h3>
+        <div className="split bullBearSplit">
+          <div className="caseColumn caseColumn--bull">
+            <h4>Bull case</h4>
+            <ul className="caseList">
+              {result.bull_bear.bull.map((item) => (
+                <CaseBullet key={`bull-${item}`} text={item} />
+              ))}
+            </ul>
+          </div>
+          <div className="caseColumn caseColumn--bear">
+            <h4>Bear case</h4>
+            <ul className="caseList">
+              {result.bull_bear.bear.map((item) => (
+                <CaseBullet key={`bear-${item}`} text={item} />
+              ))}
+            </ul>
+          </div>
         </div>
       </article>
 
