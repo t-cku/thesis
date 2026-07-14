@@ -1,4 +1,5 @@
-from datetime import date, datetime
+from datetime import date as Date
+from datetime import datetime as DateTime
 from typing import Any, Literal, Optional
 
 from pydantic import BaseModel, EmailStr, Field, field_validator, model_validator
@@ -20,7 +21,7 @@ class UserPublic(BaseModel):
     email: EmailStr
     name: Optional[str] = None
     email_verified: bool = False
-    created_at: datetime
+    created_at: DateTime
 
     model_config = {"from_attributes": True}
 
@@ -54,8 +55,8 @@ class SavedThesisSummary(BaseModel):
     id: int
     ticker: str
     company_name: str
-    generated_at: datetime
-    saved_at: datetime
+    generated_at: DateTime
+    saved_at: DateTime
 
     model_config = {"from_attributes": True}
 
@@ -64,7 +65,7 @@ class SavedThesisDetail(BaseModel):
     id: int
     ticker: str
     company_name: str
-    saved_at: datetime
+    saved_at: DateTime
     one_pager: "OnePager"
 
 
@@ -172,7 +173,7 @@ class NewsItem(BaseModel):
 
     text: str = Field(..., min_length=1, description="News headline or summary")
     source: str = Field(..., min_length=1, description="Publisher name, e.g. Bloomberg")
-    date: date = Field(..., description="Publication date (ISO YYYY-MM-DD)")
+    date: Date = Field(..., description="Publication date (ISO YYYY-MM-DD)")
 
     @model_validator(mode="before")
     @classmethod
@@ -182,21 +183,21 @@ class NewsItem(BaseModel):
             return {
                 "text": value,
                 "source": "Unknown",
-                "date": date.today().isoformat(),
+                "date": Date.today().isoformat(),
             }
         return value
 
     @field_validator("date", mode="before")
     @classmethod
     def parse_date(cls, value: Any) -> Any:
-        if isinstance(value, date) and not isinstance(value, datetime):
-            return value
-        if isinstance(value, datetime):
+        if isinstance(value, DateTime):
             return value.date()
+        if isinstance(value, Date):
+            return value
         if isinstance(value, str):
             cleaned = value.strip()
             try:
-                return date.fromisoformat(cleaned[:10])
+                return Date.fromisoformat(cleaned[:10])
             except ValueError:
                 pass
             for fmt in (
@@ -208,7 +209,7 @@ class NewsItem(BaseModel):
                 "%m/%d/%Y",
             ):
                 try:
-                    return datetime.strptime(cleaned, fmt).date()
+                    return DateTime.strptime(cleaned, fmt).date()
                 except ValueError:
                     continue
         raise ValueError(f"Invalid news date: {value}")
@@ -234,7 +235,7 @@ class OnePager(BaseModel):
 
     ticker: str
     company_name: str
-    generated_at: datetime
+    generated_at: DateTime
     company_overview: CompanyOverview
     industry_competitors: IndustryCompetitors
     financial_health: FinancialHealth
