@@ -73,7 +73,7 @@ export function OnePagerView({ result, onAnalyzeTicker }: OnePagerViewProps) {
 
       <SectionNav />
 
-      <article className="card">
+      <article id="section-company-overview" className="card sectionAnchor">
         <h3>1. Company overview</h3>
         <p>{result.company_overview.description}</p>
         <p>
@@ -84,7 +84,7 @@ export function OnePagerView({ result, onAnalyzeTicker }: OnePagerViewProps) {
         </p>
       </article>
 
-      <article className="card">
+      <article id="section-industry-competitors" className="card sectionAnchor">
         <h3>2. Industry and competitors</h3>
         <p>
           <strong>Industry:</strong> {result.industry_competitors.industry}
@@ -174,7 +174,7 @@ export function OnePagerView({ result, onAnalyzeTicker }: OnePagerViewProps) {
         </p>
         <ScannableProse text={result.external_signals.summary} />
         <AnalystRatingsTable items={result.external_signals.notable_endorsements_or_criticism} />
-        <div id="section-recent-news" className="sectionAnchor">
+        <div>
           <p className="subsectionLabel">Recent news</p>
           <NewsList items={result.external_signals.recent_news} />
         </div>

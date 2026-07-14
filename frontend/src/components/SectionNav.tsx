@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react'
 
 export const SECTION_NAV_ITEMS = [
-  { id: 'section-financial-health', label: 'Financial Health' },
-  { id: 'section-bull-bear', label: 'Bull/Bear Case' },
-  { id: 'section-risks', label: 'Risks' },
-  { id: 'section-external-signals', label: 'External Signals' },
-  { id: 'section-recent-news', label: 'Recent News' },
+  { id: 'section-company-overview', number: 1, label: 'Company overview' },
+  { id: 'section-industry-competitors', number: 2, label: 'Industry & competitors' },
+  { id: 'section-financial-health', number: 3, label: 'Financial health' },
+  { id: 'section-bull-bear', number: 4, label: 'Bull/bear case' },
+  { id: 'section-risks', number: 5, label: 'Risks' },
+  { id: 'section-external-signals', number: 6, label: 'External signals' },
 ] as const
 
 export function SectionNav() {
@@ -36,8 +37,6 @@ export function SectionNav() {
           }
         }
 
-        // If nothing is intersecting (near bottom/top edge cases), pick the last
-        // section whose top has scrolled past a threshold.
         if (bestRatio <= 0) {
           const offset = window.scrollY + 120
           for (const item of SECTION_NAV_ITEMS) {
@@ -81,7 +80,8 @@ export function SectionNav() {
               className={activeId === item.id ? 'sectionNavLink active' : 'sectionNavLink'}
               onClick={() => handleJump(item.id)}
             >
-              {item.label}
+              <span className="sectionNavNumber">{item.number}</span>
+              <span className="sectionNavLabel">{item.label}</span>
             </button>
           </li>
         ))}
