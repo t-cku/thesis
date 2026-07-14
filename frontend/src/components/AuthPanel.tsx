@@ -3,6 +3,17 @@ import { useAuth } from '../context/AuthContext'
 
 type AuthMode = 'login' | 'register'
 
+// Survives React StrictMode remounts so one-time verify links are only redeemed once.
+const consumedVerifyTokens = new Set<string>()
+
+function clearVerifyQueryParam() {
+  const url = new URL(window.location.href)
+  if (!url.searchParams.has('verify')) return
+  url.searchParams.delete('verify')
+  const next = `${url.pathname}${url.search}${url.hash}`
+  window.history.replaceState({}, '', next)
+}
+
 export function AuthPanel() {
   const {
     user,
@@ -31,6 +42,12 @@ export function AuthPanel() {
     const params = new URLSearchParams(window.location.search)
     const token = params.get('verify')
     if (!token) return
+    if (consumedVerifyTokens.has(token)) return
+
+    consumedVerifyTokens.add(token)
+    // Remove the token from the URL immediately so refresh/StrictMode
+    // does not try to redeem the same one-time link again.
+    clearVerifyQueryParam()
 
     let cancelled = false
     setSubmitting(true)
@@ -40,15 +57,13 @@ export function AuthPanel() {
       .then(() => {
         if (!cancelled) {
           setInfo('Email verified successfully.')
-          const url = new URL(window.location.href)
-          url.searchParams.delete('verify')
-          window.history.replaceState({}, '', url.pathname + url.search)
+          setError(null)
         }
       })
       .catch((verifyError) => {
-        if (!cancelled) {
-          setError(verifyError instanceof Error ? verifyError.message : 'Verification failed')
-        }
+        if (cancelled) return
+        const message = verifyError instanceof Error ? verifyError.message : 'Verification failed'
+        setError(message)
       })
       .finally(() => {
         if (!cancelled) {
@@ -60,6 +75,12 @@ export function AuthPanel() {
       cancelled = true
     }
   }, [verifyEmail])
+
+  useEffect(() => {
+    if (user?.email_verified && error?.toLowerCase().includes('invalid verification link')) {
+      setError(null)
+    }
+  }, [user?.email_verified, error])
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault()
