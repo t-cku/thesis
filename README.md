@@ -32,7 +32,7 @@ Everything in the pipeline converges on a single response shape: `OnePager`.
 | 3. Financial health | `financial_health` | Raw `metrics` (from data API) + narrative `analysis` (from AI) |
 | 4. Bull / bear case | `bull_bear` | Exactly 3 bull and 3 bear arguments each |
 | 5. Risks | `risks` | Categorized risks (regulatory, competitive, macro, execution, other) |
-| 6. External signals | `external_signals` | Sentiment, recent news, endorsements/criticism |
+| 6. External signals | `external_signals` | Sentiment, recent news (text + source + date), endorsements/criticism |
 
 ### Financial metrics: required vs optional
 

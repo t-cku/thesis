@@ -395,6 +395,22 @@ button:disabled {
   text-align: center;
 }
 
+.newsBody {
+  display: grid;
+  gap: 0.2rem;
+  min-width: 0;
+}
+
+.newsText {
+  line-height: 1.5;
+}
+
+.newsMeta {
+  color: #94a3b8;
+  font-size: 0.82rem;
+  line-height: 1.35;
+}
+
 .newsItem--positive .newsToneIcon {
   color: #16a34a;
 }

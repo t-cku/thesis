@@ -1,7 +1,7 @@
-from datetime import datetime
-from typing import Literal, Optional
+from datetime import date, datetime
+from typing import Any, Literal, Optional
 
-from pydantic import BaseModel, EmailStr, Field, field_validator
+from pydantic import BaseModel, EmailStr, Field, field_validator, model_validator
 
 
 class RegisterRequest(BaseModel):
@@ -167,10 +167,65 @@ class RiskItem(BaseModel):
     description: str
 
 
+class NewsItem(BaseModel):
+    """A recent news headline with required attribution."""
+
+    text: str = Field(..., min_length=1, description="News headline or summary")
+    source: str = Field(..., min_length=1, description="Publisher name, e.g. Bloomberg")
+    date: date = Field(..., description="Publication date (ISO YYYY-MM-DD)")
+
+    @model_validator(mode="before")
+    @classmethod
+    def coerce_legacy_string(cls, value: Any) -> Any:
+        """Accept legacy plain-string news items from older saved theses."""
+        if isinstance(value, str):
+            return {
+                "text": value,
+                "source": "Unknown",
+                "date": date.today().isoformat(),
+            }
+        return value
+
+    @field_validator("date", mode="before")
+    @classmethod
+    def parse_date(cls, value: Any) -> Any:
+        if isinstance(value, date) and not isinstance(value, datetime):
+            return value
+        if isinstance(value, datetime):
+            return value.date()
+        if isinstance(value, str):
+            cleaned = value.strip()
+            try:
+                return date.fromisoformat(cleaned[:10])
+            except ValueError:
+                pass
+            for fmt in (
+                "%d %B %Y",
+                "%B %d, %Y",
+                "%d %b %Y",
+                "%b %d, %Y",
+                "%Y/%m/%d",
+                "%m/%d/%Y",
+            ):
+                try:
+                    return datetime.strptime(cleaned, fmt).date()
+                except ValueError:
+                    continue
+        raise ValueError(f"Invalid news date: {value}")
+
+    @field_validator("source")
+    @classmethod
+    def require_source(cls, value: str) -> str:
+        cleaned = value.strip()
+        if not cleaned:
+            raise ValueError("News source is required")
+        return cleaned
+
+
 class ExternalSignals(BaseModel):
     sentiment: Literal["bullish", "bearish", "neutral", "mixed"]
     summary: str
-    recent_news: list[str] = Field(..., min_length=1)
+    recent_news: list[NewsItem] = Field(..., min_length=1)
     notable_endorsements_or_criticism: list[str] = Field(default_factory=list)
 
 
@@ -250,7 +305,11 @@ class OnePager(BaseModel):
                         "sentiment": "neutral",
                         "summary": "Mixed sentiment around AI roadmap and China demand.",
                         "recent_news": [
-                            "Apple announces new AI features for upcoming iOS release."
+                            {
+                                "text": "Apple announces new AI features for upcoming iOS release.",
+                                "source": "Bloomberg",
+                                "date": "2026-07-13",
+                            }
                         ],
                         "notable_endorsements_or_criticism": [
                             "Analysts debate pace of AI feature rollout vs. peers."

@@ -62,10 +62,21 @@ Return ONLY a JSON object with this exact structure. No markdown, no code fences
   "external_signals": {{
     "sentiment": "bullish|bearish|neutral|mixed",
     "summary": "sentiment summary",
-    "recent_news": ["news item 1"],
+    "recent_news": [
+      {{
+        "text": "news headline",
+        "source": "Bloomberg",
+        "date": "2026-07-13"
+      }}
+    ],
     "notable_endorsements_or_criticism": ["endorsement or criticism"]
   }}
 }}
+
+Recent news rules:
+- Include at least 1 recent item from web search
+- EVERY item MUST include text, source (publisher name), and date (ISO YYYY-MM-DD)
+- Source and date are required — never omit them; use the real publisher and publication date from search results
 
 Bull/bear selection rules:
 - Exactly 3 bull and 3 bear arguments each

@@ -2,6 +2,12 @@ import type { RiskCategory } from './formatting'
 
 export type Sentiment = 'bullish' | 'bearish' | 'neutral' | 'mixed'
 
+export interface NewsItem {
+  text: string
+  source: string
+  date: string
+}
+
 export interface OnePager {
   ticker: string
   company_name: string
@@ -33,7 +39,7 @@ export interface OnePager {
   external_signals: {
     sentiment: Sentiment
     summary: string
-    recent_news: string[]
+    recent_news: NewsItem[]
     notable_endorsements_or_criticism: string[]
   }
 }
