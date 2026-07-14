@@ -13,6 +13,7 @@ export interface AnalystRatingRow {
   priceTarget: string
   date: string
   raw: string
+  structured: boolean
 }
 
 const PROSE_LABEL_PATTERN =
@@ -22,7 +23,7 @@ const RATING_VALUES =
   /\b(Strong\s+Buy|Outperform|Overweight|Buy|Hold|Neutral|Equal[\s-]Weight|Underperform|Underweight|Sell|Positive|Negative|Market\s+Perform)\b/i
 
 const PRICE_TARGET_PATTERN =
-  /(?:price\s+target|PT|target)\s*(?:of\s*)?[$]?\s*([\d,.]+(?:\s*(?:billion|million|B|M))?)|[$]\s*([\d,.]+)/i
+  /(?:price\s+target|PT|target(?:\s+price)?)\s*(?:of|:)?\s*[$]?\s*([\d,.]+(?:\s*(?:billion|million|B|M))?)/i
 
 const DATE_PATTERN =
   /\b((?:Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:tember)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)\s+\d{1,2},?\s+\d{4}|\d{1,2}\/\d{1,2}\/\d{2,4}|\d{4}-\d{2}-\d{2}|Q[1-4]\s+\d{4})\b/i
@@ -100,12 +101,8 @@ export function splitScannableProse(text: string): ScannableBlock {
 
 function extractPriceTarget(text: string): string {
   const match = text.match(PRICE_TARGET_PATTERN)
-  if (!match) {
-    const dollarMatch = text.match(/[$]\s*[\d,.]+(?:\s*(?:billion|million|B|M))?/i)
-    return dollarMatch?.[0]?.trim() ?? ''
-  }
-  const value = match[1] ?? match[2]
-  return value ? `$${value.replace(/^\$/, '')}` : ''
+  if (!match?.[1]) return ''
+  return `$${match[1].replace(/^\$/, '')}`
 }
 
 function extractDate(text: string): string {
@@ -137,29 +134,55 @@ function extractFirm(text: string, rating: string, priceTarget: string, date: st
   return firm || text
 }
 
+function looksLikePriceTarget(value: string): boolean {
+  return /^\$?\s*[\d,.]+/.test(value.trim()) || /price\s+target|PT\b/i.test(value)
+}
+
+function looksLikeDate(value: string): boolean {
+  return DATE_PATTERN.test(value.trim())
+}
+
+function looksLikeRating(value: string): boolean {
+  return RATING_VALUES.test(value.trim()) && value.trim().length <= 24
+}
+
 export function parseAnalystRating(text: string): AnalystRatingRow {
   const rating = extractRating(text)
   const priceTarget = extractPriceTarget(text)
   const date = extractDate(text)
-  const firm = extractFirm(text, rating, priceTarget, date)
 
-  const parsed = [firm, rating, priceTarget, date].filter(Boolean)
-  if (parsed.length >= 2) {
-    return { firm, rating: rating || '—', priceTarget: priceTarget || '—', date: date || '—', raw: text }
-  }
-
-  const commaParts = text.split(',').map((part) => part.trim()).filter(Boolean)
-  if (commaParts.length >= 3) {
+  // Only treat as a structured rating row when we found real rating/PT signals.
+  // Never comma-split free-form commentary into fake columns.
+  const structured = Boolean(rating || priceTarget)
+  if (structured) {
+    const firm = extractFirm(text, rating, priceTarget, date)
     return {
-      firm: commaParts[0] || text,
-      rating: commaParts[1] || '—',
-      priceTarget: commaParts[2] || '—',
-      date: commaParts[3] || '—',
+      firm: firm || text,
+      rating: rating || '—',
+      priceTarget: priceTarget || '—',
+      date: date || '—',
       raw: text,
+      structured: true,
     }
   }
 
-  return { firm: text, rating: '—', priceTarget: '—', date: '—', raw: text }
+  const commaParts = text.split(',').map((part) => part.trim()).filter(Boolean)
+  if (
+    commaParts.length >= 3 &&
+    looksLikeRating(commaParts[1] ?? '') &&
+    (looksLikePriceTarget(commaParts[2] ?? '') || looksLikeDate(commaParts[2] ?? ''))
+  ) {
+    return {
+      firm: commaParts[0] || text,
+      rating: commaParts[1] || '—',
+      priceTarget: looksLikePriceTarget(commaParts[2] ?? '') ? commaParts[2] : '—',
+      date: commaParts[3] || (looksLikeDate(commaParts[2] ?? '') ? commaParts[2] : '—'),
+      raw: text,
+      structured: true,
+    }
+  }
+
+  return { firm: text, rating: '—', priceTarget: '—', date: '—', raw: text, structured: false }
 }
 
 export function inferNewsTone(text: string): NewsTone {
