@@ -108,20 +108,24 @@ export function OnePagerView({ result, onAnalyzeTicker }: OnePagerViewProps) {
         <ScannableProse text={result.financial_health.analysis} />
       </article>
 
-      <article className="card split">
-        <div>
+      <article className="card split bullBearSplit">
+        <div className="caseColumn caseColumn--bull">
           <h3>4. Bull case</h3>
-          <ul>
+          <ul className="caseList">
             {result.bull_bear.bull.map((item) => (
-              <li key={`bull-${item}`}>{item}</li>
+              <li key={`bull-${item}`} title={item}>
+                {item}
+              </li>
             ))}
           </ul>
         </div>
-        <div>
+        <div className="caseColumn caseColumn--bear">
           <h3>Bear case</h3>
-          <ul>
+          <ul className="caseList">
             {result.bull_bear.bear.map((item) => (
-              <li key={`bear-${item}`}>{item}</li>
+              <li key={`bear-${item}`} title={item}>
+                {item}
+              </li>
             ))}
           </ul>
         </div>
